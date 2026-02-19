@@ -20,6 +20,7 @@ Uso:
   python vy_cloud.py
 """
 
+import base64
 import os
 import sys
 import time
@@ -31,7 +32,9 @@ from orgo import Computer
 
 load_dotenv()
 
-WORKSPACE_ID = "283e0dd7-a305-4842-9caf-4f6a38492877"
+WORKSPACE_ID = os.environ.get(
+    "ORGO_WORKSPACE_ID", "283e0dd7-a305-4842-9caf-4f6a38492877"
+)
 VM_NAME = "agent-s-runner"
 VM_RAM = 8
 VM_CPU = 4
@@ -154,8 +157,12 @@ def try_install_agent_s(computer, max_retries=2):
 def run_mission_agent_s(computer):
     log.info("Executando missao via Agent-S...")
     agent_script = f"""
+import glob as _glob
 import sys
-sys.path.insert(0, '/home/user/vy_venv/lib/python3.*/site-packages')
+
+_paths = _glob.glob('/home/user/vy_venv/lib/python3.*/site-packages')
+if _paths:
+    sys.path.insert(0, _paths[0])
 
 try:
     import pyautogui
@@ -224,7 +231,6 @@ def take_and_download_screenshot(computer):
 
     log.info("Tentando screenshot via base64...")
     try:
-        import base64
         b64_data = computer.screenshot_base64()
         img_bytes = base64.b64decode(b64_data)
         SCREENSHOT_LOCAL_PATH.write_bytes(img_bytes)
