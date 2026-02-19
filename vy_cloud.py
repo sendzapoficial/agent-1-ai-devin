@@ -36,8 +36,8 @@ WORKSPACE_ID = os.environ.get(
     "ORGO_WORKSPACE_ID", "283e0dd7-a305-4842-9caf-4f6a38492877"
 )
 VM_NAME = "agent-s-runner"
-VM_RAM = 8
-VM_CPU = 4
+VM_RAM = int(os.environ.get("ORGO_VM_RAM", "4"))
+VM_CPU = int(os.environ.get("ORGO_VM_CPU", "4"))
 PROVISION_TIMEOUT = 60
 SCREENSHOT_LOCAL_PATH = Path("vy_screenshot_final.png")
 MISSION_URL = "https://web.whatsapp.com"
@@ -210,8 +210,8 @@ def run_mission_native(computer):
             verbose=True,
         )
 
-        log.info("  Aguardando pagina carregar (10s)...")
-        computer.wait(10.0)
+        log.info("  Aguardando pagina estabilizar (5s)...")
+        time.sleep(5)
         log.info("Missao executada via Orgo Computer Use nativo.")
         return True
     except Exception as exc:
