@@ -4,16 +4,15 @@ VY-WEB Cloud Desktop Automation
 SaaS de Automacao de Desktop na Nuvem
 
 Integra Orgo AI (infraestrutura de desktop na nuvem) com Agent-S (framework
-de agente de IA para GUI). Quando Agent-S nao esta disponivel ou a maquina
-nao possui recursos suficientes, utiliza o modo nativo de Computer Use da
-Orgo como fallback.
+de agente de IA para GUI). Por padrao utiliza o modo nativo de Computer Use
+da Orgo para maxima velocidade e confiabilidade. Agent-S pode ser ativado
+via ENABLE_AGENT_S=true (experimental).
 
 Fluxo End-to-End:
   1. Provisiona VM na Orgo AI
-  2. Tenta instalar Agent-S (com self-healing)
-  3. Executa missao (navegar ate web.whatsapp.com)
-  4. Tira screenshot de verificacao
-  5. Baixa screenshot e destroi a VM
+  2. Executa missao via Orgo Computer Use nativo (ou Agent-S se habilitado)
+  3. Tira screenshot de verificacao
+  4. Baixa screenshot e destroi a VM
 
 Uso:
   export ORGO_API_KEY=sk_live_...
@@ -41,6 +40,7 @@ VM_CPU = int(os.environ.get("ORGO_VM_CPU", "4"))
 PROVISION_TIMEOUT = 60
 SCREENSHOT_LOCAL_PATH = Path("vy_screenshot_final.png")
 MISSION_URL = "https://web.whatsapp.com"
+ENABLE_AGENT_S = os.environ.get("ENABLE_AGENT_S", "false").lower() == "true"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -262,14 +262,18 @@ def main():
     try:
         computer = provision_vm()
 
-        agent_s_installed = try_install_agent_s(computer)
-
         mission_ok = False
-        if agent_s_installed:
-            mission_ok = run_mission_agent_s(computer)
 
-        if not mission_ok:
-            log.info("Ativando fallback: Orgo Computer Use nativo...")
+        if ENABLE_AGENT_S:
+            log.info("ENABLE_AGENT_S=true: tentando instalar e usar Agent-S...")
+            agent_s_installed = try_install_agent_s(computer)
+            if agent_s_installed:
+                mission_ok = run_mission_agent_s(computer)
+            if not mission_ok:
+                log.info("Agent-S falhou. Ativando fallback: Orgo Computer Use nativo...")
+                mission_ok = run_mission_native(computer)
+        else:
+            log.info("Usando Orgo Computer Use nativo (padrao). Defina ENABLE_AGENT_S=true para usar Agent-S.")
             mission_ok = run_mission_native(computer)
 
         if mission_ok:
